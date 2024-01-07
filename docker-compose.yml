@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  db:
+    image: mysql:8.0  
+    command:
+      - "--default-authentication-plugin=mysql_native_password"
+    ports:
+      - "3307:3307"
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    platform: linux/x86_64
+    security_opt:
+      - seccomp:unconfined
+  back:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/back
+      - bundle:/usr/local/bundle
+    depends_on:
+      - db
+    ports:
+      - "3001:3001"
+    environment:
+      FRONT_URL: http://localhost:3000
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_USERNAME: root
+      TZ: Asia/Tokyo
+    command: bash -c "rm -f tmp/pids/server.pid && rails server -b 0.0.0.0 -p 3001 -e development" && rails db:seed
+volumes:
+  db:
+    driver: local
+  bundle:
+    driver: local
